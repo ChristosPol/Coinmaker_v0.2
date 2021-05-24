@@ -5,16 +5,16 @@ ticks <- c(5, 60, 2, 4, 6, 12, 24)
 units <- c(rep("minutes", 2), rep("hours", 5))
 
 # Or choose a single one
-ticks <- c(5)
+ticks <- c(15)
 units <- c(rep("minutes", 1))
 intervals <- paste(ticks, units, sep = " ")
 
 # Load trades and conver to OHLC, applies filtering
 klines <- trades_to_OHLC(pair = pair,
                interval = intervals,
-               from_date = "2018-01-01",
-               to_date = "2020-12-10",
-               date_subset = F)
+               from_date = "2020-01-14",
+               to_date = "2021-05-19",
+               date_subset = T)
 names(klines) <- gsub(" ", "_", intervals)
 
 # Get a first visual

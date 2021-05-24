@@ -1072,7 +1072,7 @@ Support_Resistance <- function(takeprofit, stoploss_trail,stoploss_ult,plot.it,n
 
       fut$action[nrow(fut)] <- "buy"
       fut$Units[nrow(fut)] <- initial_budget / fut$close[nrow(fut)]
-      fut$Price[nrow(fut)] <- fut$Units[nrow(fut)] * fut$close[nrow(fut)]
+      fut$Price[nrow(fut)] <- fut$Units[nrow(fut)] * fut$close[nrow(fut)]- (0.0026 * fut$Units[nrow(fut)] * fut$close[nrow(fut)])
       fut$id[nrow(fut)] <- round(runif(1, 10000, 5000000))
 
       # Sell condition
@@ -1081,7 +1081,7 @@ Support_Resistance <- function(takeprofit, stoploss_trail,stoploss_ult,plot.it,n
       # | fut$deriv[nrow(fut)] < 0
       fut$action[nrow(fut)] <- "sell"
       fut$Units[nrow(fut)] <- fut$Units[nrow(fut) -1]
-      fut$Price[nrow(fut)] <- fut$close[nrow(fut)]* fut$Units[nrow(fut)]
+      fut$Price[nrow(fut)] <- fut$close[nrow(fut)]* fut$Units[nrow(fut)]- (0.0026 * fut$Units[nrow(fut)] * fut$close[nrow(fut)])
       fut$id[nrow(fut)] <- fut$id[nrow(fut)-1]
       initial_budget <- fut$Price[nrow(fut)]
 
@@ -4145,6 +4145,126 @@ splines_fast_slow_cross <- function(spar_fast, spar_slow,spar_slower, takeprofit
       # Keep condition
     } else if ( fut$action[nrow(fut) - 1] %in% c("buy", "keep")   &
                 fut$exit_condition[nrow(fut)] == FALSE ) {
+      
+      fut$action[nrow(fut)] <- "keep"
+      fut$Units[nrow(fut)] <- fut$Units[nrow(fut) -1 ]
+      fut$id[nrow(fut)] <- fut$id[nrow(fut)-1]
+      
+    } else {
+      
+      fut$action[nrow(fut)] <- "no action"
+      
+    }
+    
+    train_data <- fut
+    # print(i)
+    if(plot.it == TRUE){
+      Sys.sleep(0.1)
+      # flush.console()
+    }
+    print(i)
+  }
+  return(train_data)
+}
+
+
+simple_SMA <- function(sma, takeprofit,stoploss_ult, plot.it) {
+  
+  # Train and test datasets
+  train_data[, c("x",
+                 "SMA",
+                 "exit_condition",
+                 "tp",
+                 "ult_sl",
+                 "action",
+                 "Units",
+                 "Price",
+                 "id") := list(NA, NA, NA, NA, NA, NA,
+                               NA, NA, NA) ]
+  
+  test_data[, c("x",
+                "SMA",
+                "exit_condition",
+                "tp",
+                "ult_sl",
+                "action",
+                "Units",
+                "Price",
+                "id") := list(NA, NA, NA, NA, NA, NA,
+                              NA, NA, NA) ]
+  
+  # Going intro the loop for test data -----------------------------------------
+  for (i in 1:nrow(test_data)){
+    
+    fut <- rbind(train_data, test_data[i, ])
+    fut$x <- 1:nrow(fut)
+    
+    # OBV and SMA calculation -------------------------------------------------------
+    fut[, SMA := EMA(fut[, close], n = sma)]
+    
+    if(plot.it == TRUE){
+      
+      plot_df <- tail(fut, 200)
+      
+      # sr <- SR_lines(fut, roll = 100, Ns = nrow(fut), n_sort = 15, pair = pair,plot.it = F)
+      # fut <- tail(fut, 250)
+      df_points_buy <- data.frame(x = na.omit(plot_df$x[plot_df$action =="buy"]),
+                                  y = na.omit(plot_df$close[plot_df$action =="buy"]))
+      df_points_sell <- data.frame(x = na.omit(plot_df$x[plot_df$action =="sell"]),
+                                   y = na.omit(plot_df$close[plot_df$action == "sell"]))
+      
+      par(mfrow = c(1, 1))
+      plot(plot_df$close, type ="l", main = paste0("profits = ", tail(na.omit(plot_df$Price), 1)))
+      lines(plot_df$SMA, col ="blue")
+      
+      points(rownames(plot_df)[plot_df$x %in% df_points_buy$x], df_points_buy$y, col ="green", pch = 19)
+      points(rownames(plot_df)[plot_df$x %in% df_points_sell$x], df_points_sell$y, col ="red", pch = 19)
+      
+    }
+    
+    # Exit condition for takeprofit  - Fixed
+    tp <- tail(fut$close[fut$action == "buy"][!is.na(fut$close[fut$action == "buy"])], 1) + takeprofit * tail(fut$close[fut$action == "buy"][!is.na(fut$close[fut$action == "buy"])], 1)
+    
+    if (length(tp) == 0) {
+      tp <- 0
+    }
+    
+    # Ultimate stop loss
+    ult_sl <- tail(fut$close[fut$action == "buy"][!is.na(fut$close[fut$action == "buy"])], 1) - stoploss_ult * tail(fut$close[fut$action == "buy"][!is.na(fut$close[fut$action == "buy"])], 1)
+    
+    if (length(ult_sl) == 0) {
+      ult_sl <- 0
+    }
+    fut$tp[nrow(fut)] <- tp
+    fut$ult_sl[nrow(fut)] <- ult_sl
+    
+    # fut$exit_condition[nrow(fut)] <-  fut$ult_sl[nrow(fut)] > fut$close[nrow(fut)] | fut$tp[nrow(fut)] < fut$close[nrow(fut)]
+    fut$exit_condition[nrow(fut)] <-  fut$close[nrow(fut)] > fut$SMA[nrow(fut)]
+    # Deciding upon action -----------------------------------------------------
+    # Buy condition
+    if ( (is.na(fut$action[nrow(fut) - 1]) |  fut$action[nrow(fut) - 1] %in% c("sell", "no action")) &
+         (fut$exit_condition[nrow(fut)] == TRUE) ) {
+      
+      fut$action[nrow(fut)] <- "buy"
+      fut$Units[nrow(fut)] <- initial_budget / fut$close[nrow(fut)]
+      fut$Price[nrow(fut)] <- fut$Units[nrow(fut)] * fut$close[nrow(fut)] - (0.0026 * fut$Units[nrow(fut)] * fut$close[nrow(fut)])
+      # fut$Price[nrow(fut)] <- fut$Units[nrow(fut)] * fut$close[nrow(fut)]
+      fut$id[nrow(fut)] <- round(runif(1, 10000, 5000000))
+      
+      # Sell condition
+    } else if (fut$action[nrow(fut) - 1] %in% c("keep", "buy") & (
+      fut$exit_condition[nrow(fut)] == FALSE  )) {
+      
+      fut$action[nrow(fut)] <- "sell"
+      fut$Units[nrow(fut)] <- fut$Units[nrow(fut) -1]
+      fut$Price[nrow(fut)] <- fut$close[nrow(fut)]* fut$Units[nrow(fut)]  - (0.0026 * fut$Units[nrow(fut)] * fut$close[nrow(fut)])
+      # fut$Price[nrow(fut)] <- fut$close[nrow(fut)]* fut$Units[nrow(fut)]
+      fut$id[nrow(fut)] <- fut$id[nrow(fut)-1]
+      initial_budget <- fut$Price[nrow(fut)]
+      
+      # Keep condition
+    } else if ( fut$action[nrow(fut) - 1] %in% c("buy", "keep")   &
+                fut$exit_condition[nrow(fut)] == TRUE ) {
       
       fut$action[nrow(fut)] <- "keep"
       fut$Units[nrow(fut)] <- fut$Units[nrow(fut) -1 ]
