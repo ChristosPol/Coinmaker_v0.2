@@ -451,7 +451,7 @@ Splines_Tangent <- function(takeprofit, stoploss_trail,stoploss_ult, spar,plot.i
 
       # Sell condition
     } else if (fut$action[nrow(fut) - 1] %in% c("keep", "buy") & (
-      fut$exit_condition[nrow(fut)] == TRUE )) {
+      fut$exit_condition[nrow(fut)] == TRUE | fut$deriv[nrow(fut)] < 0  )) {
       # | fut$deriv[nrow(fut)] < 0
       fut$action[nrow(fut)] <- "sell"
       fut$Units[nrow(fut)] <- fut$Units[nrow(fut) -1]
