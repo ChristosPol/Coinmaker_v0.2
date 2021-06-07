@@ -3,10 +3,10 @@
 # per <- data.frame(per = seq(-2, -10, -1), flag = 1)
 # rsi <- data.frame(rsi = seq(5, 40, 1), flag = 1)
 # rsi_below <- data.frame(rsi_below = seq(10, 40, 5), flag = 1)
-n_sort <- data.frame(n_sort = seq(2, 60, 1), flag = 1)
-look_back <- data.frame(look_back = seq(20, 500, 20), flag = 1)
-tp <- data.frame(tp = seq(0.01, 0.15, 0.01)*100, flag = 1)
-sl <- data.frame(sl = c(0.01, 0.02, 0.03, 0.04, 0.05)*100, flag = 1)
+n_sort <- data.frame(n_sort = seq(2, 25, 1), flag = 1)
+look_back <- data.frame(look_back = seq(20, 200, 20), flag = 1)
+tp <- data.frame(tp = seq(0.01, 0.05, 0.01)*100, flag = 1)
+sl <- data.frame(sl = c(0.01, 0.02)*100, flag = 1)
 
 # testing_params <- left_join(rsi, tp) %>% left_join(sl)%>% left_join(rsi_below)%>% left_join(EMA_fast)
 testing_params <- as.data.table(left_join(n_sort, look_back) %>% left_join(sl)%>% left_join(tp))
@@ -19,7 +19,7 @@ profs <- c()
 rm(i)
 for(j in 1:nrow(testing_params)){
 
-  df <- tail(copy(klines[[1]]), 25000) 
+  df <- tail(copy(klines[[1]]), 150000) 
   tp <- testing_params$tp[j]
   sl <- -testing_params$sl[j]
   n_sort <- testing_params$n_sort[j]
@@ -92,7 +92,7 @@ for(j in 1:nrow(testing_params)){
   }
   }
   df$returns <- c(diff(df$close), 0)
-  profs[j] <- df[position =="long", sum(returns)] +df[position =="short", sum(returns)] 
+  profs[j] <- df[position =="long", sum(returns)] + df[position =="short", sum(-returns)] 
   
   print(paste0("for rep ", j, " profs: ", profs[j]))
 }
@@ -106,14 +106,15 @@ reps <- 1:length(lens)
 df$trade <- as.character(rep(reps, lens))
 df[is.na(position), trade := NA]
 
-summaries <- df[, .(outcome = sum(returns)), by = trade][!is.na(trade)]
+summaries_long <- df[position == "long", .(outcome = sum(returns)), by = trade][!is.na(trade)][, type:= "long"]
+summaries_short <- df[position == "short", .(outcome = sum(-returns)), by = trade][!is.na(trade)][, type:= "short"]
+summaries <- rbind(summaries_long, summaries_short)
 summaries[outcome > 0, .N]/nrow(summaries)
 
 types <- unique(df[, .(position, trade)])
 types_profs <- merge(summaries, types, by = "trade", all.x = T)
 types_profs[, sum(outcome), by= position]
 
-types_profs[position == "short"  &outcome > 0, .N]/nrow(types_profs[position == "short"])
 
 # summaries
 strategy_results <- data.table(HODL = tail(df[, close],1) - head(df[, close],1),
@@ -126,7 +127,7 @@ strategy_results <- data.table(HODL = tail(df[, close],1) - head(df[, close],1),
                                SHORT_PROFS = types_profs[, sum(outcome), by= position][position =="short", V1],
                                LONG_PROFS = types_profs[, sum(outcome), by= position][position =="long", V1],
                                SHORT_WINRATIO = types_profs[position == "short"  &outcome > 0, .N]/nrow(types_profs[position == "short"]),
-                               LONG_WINRATIO = types_profs[position == "short"  &outcome > 0, .N]/nrow(types_profs[position == "long"]))
+                               LONG_WINRATIO = types_profs[position == "long"  &outcome > 0, .N]/nrow(types_profs[position == "long"]))
 strategy_results
 plot(df[, close], type= "l")
 
@@ -142,11 +143,11 @@ df[sales$V1[sales$position == "long"], action :="exit_long"]
 df[, x:= 1:nrow(df)]
 
 
-df_plot<- copy(df[6000:7500,])
+df_plot<- copy(df)
 plot(df_plot[, x], df_plot[, close], type= "l")
 points(df_plot[action =="enter_long", x], df_plot[action =="enter_long", close], col = "green", pch = 19)
 points(df_plot[action =="exit_long", x], df_plot[action =="exit_long", close], col = "red", pch = 19)
 
 points(df_plot[action =="enter_short", x], df_plot[action =="enter_short", close], col = "blue", pch = 19)
 points(df_plot[action =="exit_short", x], df_plot[action =="exit_short", close], col = "black", pch = 19)
-
+View(df)
