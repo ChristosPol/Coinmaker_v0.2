@@ -149,9 +149,6 @@ trades_to_OHLC <- function(pair, interval, from_date, to_date, date_subset) {
 
 
 
-
-
-
 calculate_profits_LS <- function(dataset, params){
 
   calcu <- dataset[action %in% c("enter_long", "enter_short", "exit_long", "exit_short"), ]
@@ -293,5 +290,16 @@ OHLC_action <- function(pair, interval){
 roundup <- function(x, towhere){
   res <- ceiling(x/towhere)*towhere
   return(res)
+}
+
+
+support <- function(x, n_sort){
+  SP <- mean(head(sort(x), n_sort))
+  return(SP)
+}
+
+resistance <- function(x, n_sort){
+  RS <- mean(head(sort(x, decreasing = T), n_sort))
+  return(RS)
 }
 

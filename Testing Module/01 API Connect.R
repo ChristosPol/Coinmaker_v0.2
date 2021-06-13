@@ -4,7 +4,7 @@
 rm(list = ls())
 
 # Source functions
-path_source <- "/media/chris/DATA/Documents/Bot_Trading/Coinmaker_v0.1/Source"
+path_source <- "/media/chris/DATA/Documents/Bot_Trading/Coinmaker_v0.2/Source"
 files.sources = list.files(path_source, full.names = T)
 sapply(files.sources, source)
 
