@@ -72,6 +72,27 @@ add_market_order <- function(url, key, secret, pair, type, ordertype, volume) {
   return(query_result)
 }
 
+add_market_order_short <- function(url, key, secret, pair, type, ordertype, volume) {
+  
+  nonce <- as.character(as.numeric(Sys.time()) * 1000000)
+  post_data <- paste0("nonce=", nonce, "&pair=", pair, "&type=", type, "&ordertype=", ordertype,
+                      "&volume=", volume, "&leverage=2")
+  method_path <- gsub("^.*?kraken.com", "", url)
+  sign <- hmac(key =  RCurl::base64Decode(secret, mode = "raw"), 
+               object = c(charToRaw(method_path), digest(object = paste0(nonce, 
+                                                                         post_data), algo = "sha256", serialize = FALSE, 
+                                                         raw = TRUE)), algo = "sha512", raw = TRUE)
+  httpheader <- c(`API-Key` = key, `API-Sign` =  RCurl::base64Encode(sign))
+  
+  curl <- RCurl::getCurlHandle(useragent = paste("Rbitcoin", packageVersion("Rbitcoin")))
+  query_result_json <- rawToChar(RCurl::getURLContent(curl = curl, 
+                                                      url = url, binary = TRUE, postfields = post_data, 
+                                                      httpheader = httpheader))
+  query_result <- jsonlite::fromJSON(query_result_json)
+  
+  return(query_result)
+}
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 #                                   Trade Balance
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
@@ -202,6 +223,27 @@ myfun <- function (url, key, secret) {
                                                       url = url,
                                                       binary = TRUE,
                                                       postfields = post_data, 
+                                                      httpheader = httpheader))
+  query_result <- jsonlite::fromJSON(query_result_json)
+  
+  return(query_result)
+}
+
+
+get_trade_history <- function (url, key, secret, offset) {
+  
+  nonce <- as.character(as.numeric(Sys.time()) * 1000000)
+  post_data <- paste0("nonce=", nonce, "&ofs=", offset)
+  method_path <- gsub("^.*?kraken.com", "", url)
+  sign <- hmac(key =  RCurl::base64Decode(secret, mode = "raw"), 
+               object = c(charToRaw(method_path), digest(object = paste0(nonce, 
+                                                                         post_data), algo = "sha256", serialize = FALSE, 
+                                                         raw = TRUE)), algo = "sha512", raw = TRUE)
+  httpheader <- c(`API-Key` = key, `API-Sign` =  RCurl::base64Encode(sign))
+  
+  curl <- RCurl::getCurlHandle(useragent = paste("Rbitcoin", packageVersion("Rbitcoin")))
+  query_result_json <- rawToChar(RCurl::getURLContent(curl = curl, 
+                                                      url = url, binary = TRUE, postfields = post_data, 
                                                       httpheader = httpheader))
   query_result <- jsonlite::fromJSON(query_result_json)
   

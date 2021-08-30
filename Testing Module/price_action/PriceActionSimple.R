@@ -11,10 +11,10 @@ path_values <- "/media/chris/DATA/Documents/Bot_Trading/Coinmaker_v0.1/Testing M
 # Choose pair and interval
 pair <- c("ETH/EUR", "ADA/EUR", "BTC/EUR", "DOT/EUR", "XRP/EUR", "LINK/EUR", "LTC/EUR",
           "OXT/EUR", "LSK/EUR")
-          # , 
-          # "SC/EUR", "TRX/EUR", "GRT/EUR", "DOGE/EUR", "STORJ/EUR",
-          # "FIL/EUR", "KSM/EUR" ,"MANA/EUR", "KAVA/EUR", "ALGO/EUR", "FLOW/EUR", "UNI/EUR",
-          # "ICX/EUR", "CRV/EUR", "BCH/EUR",  "ATOM/EUR", "MLN/EUR", "XTZ/EUR")
+# , 
+# "SC/EUR", "TRX/EUR", "GRT/EUR", "DOGE/EUR", "STORJ/EUR",
+# "FIL/EUR", "KSM/EUR" ,"MANA/EUR", "KAVA/EUR", "ALGO/EUR", "FLOW/EUR", "UNI/EUR",
+# "ICX/EUR", "CRV/EUR", "BCH/EUR",  "ATOM/EUR", "MLN/EUR", "XTZ/EUR")
 vol <- c(0.01,
          25,
          0.0003,
@@ -24,15 +24,15 @@ vol <- c(0.01,
          0.12,
          31.93,
          5)
-         # ,
-         # 1500,300,
-         # 20, 300,
-         # 20, 0.17,
-         # 0.04, 50, 5,
-         # 15, 1,
-         # 1, 10, 10,
-         # 0.03, 1, 0.26,
-         # 3)
+# ,
+# 1500,300,
+# 20, 300,
+# 20, 0.17,
+# 0.04, 50, 5,
+# 15, 1,
+# 1, 10, 10,
+# 0.03, 1, 0.26,
+# 3)
 
 interval = 240
 

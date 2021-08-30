@@ -27,6 +27,8 @@ suppressMessages(library(Metrics))
 suppressMessages(library(plm))
 suppressMessages(library(randomForest))
 suppressMessages(library(rredis))
+suppressMessages(library(grid))
+
 # Options
 setDTthreads(1)
 options(stringsAsFactors = FALSE)
@@ -293,12 +295,14 @@ roundup <- function(x, towhere){
 }
 
 
-support <- function(x, n_sort){
+support <- function(x, n_sort, n_exclude){
+  x <- x[-((length(x)-n_exclude) : length(x))]
   SP <- mean(head(sort(x), n_sort))
   return(SP)
 }
 
-resistance <- function(x, n_sort){
+resistance <- function(x, n_sort, n_exclude){
+  x <- x[-((length(x)-n_exclude) : length(x))]
   RS <- mean(head(sort(x, decreasing = T), n_sort))
   return(RS)
 }
