@@ -1,10 +1,10 @@
 rm(list = ls())
 
-path_source <- "/media/chris/DATA/Documents/Bot_Trading/Coinmaker_v0.2/Source"
+path_source <- "Source"
 files.sources = list.files(path_source, full.names = T)
 sapply(files.sources, source)
-path_alerts <- "/media/chris/DATA/Documents/Bot_Trading/Alerts"
-
+path_alerts <- "Alerts"
+dir.create(path_alerts)
 
 api_info <- read.table(paste("/media/chris/DATA/Documents/Bot_Trading", "API_Keys.txt", sep = "/"), sep = ";", header = T)
 API_Key <- as.character(api_info$API_Key)

@@ -34,12 +34,11 @@ setDTthreads(1)
 options(stringsAsFactors = FALSE)
 
 # API info
-api_info <- read.table(paste("/media/chris/DATA/Documents/Bot_Trading",
-                             "API_Keys.txt",
-                             sep = "/"),
+api_info <- read.table(paste0(gsub("Coinmaker_v0.2","", getwd()), "API_Keys.txt"),
                        sep = ";", header = T)
 API_Key <- as.character(api_info$API_Key)
 API_Sign <- as.character(api_info$API_Sign)
+
 
 # Functions --------------------------------------------------------------------
 
