@@ -1,6 +1,6 @@
 rm(list=ls())
 # Source functions
-path_source <- "/media/chris/DATA/Documents/Bot_Trading/Coinmaker_v0.2/Source"
+path_source <- "Source"
 files.sources = list.files(path_source, full.names = T)
 sapply(files.sources, source)
 
@@ -25,7 +25,7 @@ repeat {
   
   tryCatch({
   
-  df <- simple_OHLC(interval = 1, pair = pair)
+  df <- simple_OHLC(interval = 60, pair = pair)
   SP_point <- mean(head(sort(df[, tail(low, look_back)]), n_sort))
   RS_point <- mean(head(sort(df[, tail(high, look_back)], decreasing = TRUE), n_sort))
   last_close <- df[, tail(close, 1)]

@@ -6,16 +6,13 @@ sapply(files.sources, source)
 path_alerts <- "Alerts"
 dir.create(path_alerts)
 
-api_info <- read.table(paste("/media/chris/DATA/Documents/Bot_Trading", "API_Keys.txt", sep = "/"), sep = ";", header = T)
-API_Key <- as.character(api_info$API_Key)
-API_Sign <- as.character(api_info$API_Sign)
 
 avail_pairs <- myfun("https://api.kraken.com/0/public/AssetPairs", secret = API_Sign, key = API_Key)
 all_pairs <- names(avail_pairs[[2]])
 
 # Get only EUR related crypto pairs
-EUR_pairs <- grep("EUR|ETH", all_pairs, value = T)
 EUR_pairs <- grep("EUR", all_pairs, value = T)
+
 # Remove Forex pairs
 to_remove <- grep(paste(c("USD",
                           ".d",
@@ -33,8 +30,8 @@ EUR_pairs <- EUR_pairs[!EUR_pairs %in% to_remove]
 # Get OHLC data and determine trends
 
 look_back1 <- 100
-look_back2 <- 200
-n_sort <- 1
+look_back2 <- 500
+n_sort <- 5
 n_exclude <- 10
 interval <- 60
 # value_price <- list()

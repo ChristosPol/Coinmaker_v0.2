@@ -30,7 +30,7 @@ per <- data.frame(per = c(0, 0.002, 0.005, 0.008), flag = 1)
 testing_params <- as.data.table(left_join(n_sort, look_back) %>% left_join(sl)%>% left_join(tp)%>% left_join(per))
 testing_params<- testing_params[look_back > n_sort,]
 testing_params <- testing_params[tp > sl,]
-View(testing_params)
+
 # testing_params <- as.data.table(left_join(rsi, rsi_top) %>% left_join(rsi_bot)%>% left_join(sl)%>% left_join(tp))
 testing_params <- as.data.table(testing_params)
 j <- 1008

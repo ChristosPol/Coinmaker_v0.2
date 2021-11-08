@@ -28,13 +28,14 @@ suppressMessages(library(plm))
 suppressMessages(library(randomForest))
 suppressMessages(library(rredis))
 suppressMessages(library(grid))
+suppressMessages(library(readr))
 
 # Options
 setDTthreads(1)
 options(stringsAsFactors = FALSE)
 
 # API info
-api_info <- read.table(paste0(gsub("Coinmaker_v0.2","", getwd()), "API_Keys.txt"),
+api_info <- read.table(paste0("/Users/christos.polysopoulos/Repositories/", "API_Keys.txt"),
                        sep = ";", header = T)
 API_Key <- as.character(api_info$API_Key)
 API_Sign <- as.character(api_info$API_Sign)
@@ -306,3 +307,171 @@ resistance <- function(x, n_sort, n_exclude){
   return(RS)
 }
 
+
+select_period <- function(unix_time) {
+  
+  if (unix_time == "start_of_time") {
+    initial_id <- 0
+  } else if (unix_time == "manually") {
+    # select number of days starting from todays date
+    options("width" = 90)
+    v <- nanotime(Sys.time() - as.difftime(90, unit = "days"))
+    initial_id <- as.integer64(v)
+  } else {
+    file <- paste0(pair_data_results, "/", pair, ".csv.gz")
+    nL <- countLines(file)
+    dt <- fread(file, skip = nL-1)
+    initial_id <- dt$V6  
+  }
+  initial_id
+}
+
+
+trades_evaluation_withTPSL <- function(){
+  
+  df[, groups:= as.character(rep(1:length(rle(df$signal)$lengths),
+                                 rle(df$signal)$lengths))]
+  
+  df[is.na(signal), groups := NA]
+  
+  df[, index :=  1:nrow(df)]
+  
+  entries <- df[, head(index, 1), by=groups][!is.na(groups)]
+  
+  df[entries$V1, entry := "enter"]
+  df[, position := character()]
+  idx_signals <- which(df$entry == "enter")
+  price_signals <- as.vector(na.omit(df$close[(df$entry == "enter")]))
+  
+  if(length(idx_signals) >0 ){
+    if(length(price_signals) == 1){
+      index <-1
+    } else
+      index <- (length(idx_signals)-1)
+    
+    # for (i in 1:index){
+    i <-1
+    while (i <= length(idx_signals)){
+      
+      # print(idx_signals)
+      # print(idx_signals[i])
+      if(is.na(df$position[idx_signals[i]])  & df$signal[idx_signals[i]] == "long"){
+        returns_1 <- round((df$close[idx_signals[i]:nrow(df)] - price_signals[i]) / price_signals[i], 3)*100
+        
+        returns_1 <-returns_1[-1]
+        exit_1 <- head(which(returns_1 > tp | returns_1 <sl),1)
+        if(length(exit_1) == 0){
+          exit_1 <- nrow(df)-idx_signals[i]
+        }
+        
+        df[idx_signals[i]: (exit_1+idx_signals[i]), position := "long"]
+        df[idx_signals[i], status := "entered_trade"]
+        df[(exit_1+idx_signals[i]), status := "exited_trade"]
+        
+        if(is.na(df[exit_1+idx_signals[i] + 1, position]) & !is.na(df[exit_1+idx_signals[i] + 1, signal]) ){
+          
+          if(df[exit_1+idx_signals[i] + 1, signal] %in% c("long", "short")){
+            idx_signals <- sort(append(idx_signals, values= exit_1+idx_signals[i] + 1))
+            price_signals <- df[idx_signals, close]  
+          }
+          
+        }
+        
+        
+        # print("Position entered")
+      } else if(is.na(df$position[idx_signals[i]])  & df$signal[idx_signals[i]] == "short") {
+        returns_1 <- -round((df$close[idx_signals[i]:nrow(df)] - price_signals[i]) / price_signals[i], 3)*100
+        returns_1 <-returns_1[-1]
+        exit_1 <- head(which(returns_1 > tp | returns_1 <sl),1)
+        
+        if(length(exit_1) == 0){
+          exit_1 <- nrow(df)-idx_signals[i]
+        }
+        
+        df[idx_signals[i]: (exit_1+idx_signals[i]), position := "short"]
+        df[idx_signals[i], status := "entered_trade"]
+        df[(exit_1+idx_signals[i]), status := "exited_trade"]
+        if(is.na(df[exit_1+idx_signals[i] + 1, position]) & !is.na(df[exit_1+idx_signals[i] + 1, signal]) ){
+          
+          if(df[exit_1+idx_signals[i] + 1, signal] %in% c("long", "short")){
+            idx_signals <- sort(append(idx_signals, values= exit_1+idx_signals[i] + 1))
+            price_signals <- df[idx_signals, close]  
+          }
+          
+        }
+      }
+      i <- i+1 
+    }
+  }
+  
+  
+  
+  
+  # df$returns <- c(diff(df$close), 0)
+  # if(is.null(df$status) == FALSE){
+  #   
+  #   ids <- round(runif(n = length(which(!is.na(df$status)))/2, min = 10000, max = 10000000))
+  #   ids_imp <- data.table(idx = which(!is.na(df$status)), id = rep(ids, each =2))
+  #   df$trade_id <- NA
+  #   df$trade_id[ids_imp$idx] <- ids_imp$id
+  #   
+  #   idss <- as.vector(na.omit(unique(df$trade_id)))
+  #   
+  #   for(g in 1:length(idss)){
+  #     
+  #     df$trade_id[which(df$trade_id %in% idss[g])[1]:which(df$trade_id %in% idss[g])[2]] <- idss[g]
+  #     
+  #   }
+  #   
+  #   df[status %in% c("entered_trade", "exited_trade"), fees := close*0.0026]
+  #   
+  #   
+  #   fees <- df[, sum(fees, na.rm = T), by = trade_id][!is.na(trade_id)]
+  #   df[status == "exited_trade", returns := 0]
+  #   profs[j] <- df[position =="long", sum(returns)] + df[position =="short", sum(-returns)] - sum(fees$V1)
+  #   
+  #   
+  #   summaries_long <- df[position == "long", .(outcome = sum(returns)), by = trade_id][!is.na(trade_id)][, type:= "long"]
+  #   summaries_long <- merge(summaries_long, fees, by = "trade_id", all.x = T)
+  #   summaries_long[, outcome:= outcome -V1]
+  #   summaries_short <- df[position == "short", .(outcome = sum(-returns)), by = trade_id][!is.na(trade_id)][, type:= "short"]
+  #   summaries_short <- merge(summaries_short, fees, by = "trade_id", all.x = T)
+  #   summaries_short[, outcome:= outcome -V1]
+  #   summaries <- rbind(summaries_long, summaries_short)
+  #   summaries[outcome > 0, .N]/nrow(summaries)
+  #   
+  #   types <- unique(df[, .(position, trade_id)])
+  #   types_profs <- merge(summaries, types, by = "trade_id", all.x = T)
+  #   types_profs[, sum(outcome), by= position]
+  #   
+  #   
+  #   # summaries
+  #   strategy_results[[j]] <- data.table(HODL = tail(df[, close],1) - head(df[, close],1),
+  #                                       PROFS = profs[j],
+  #                                       PROFS_PER = round(profs[j] /head(df[,close], 1)*100, 2),
+  #                                       WINRATIO = summaries[outcome > 0, .N]/nrow(summaries),
+  #                                       N_TRADES = sum(unique(df[, .(position, trade_id)])[, table(position)]),
+  #                                       N_LONG = unique(df[, .(position, trade_id)])[, table(position)][1],
+  #                                       N_SHORT = unique(df[, .(position, trade_id)])[, table(position)][2],
+  #                                       SHORT_PROFS = types_profs[, sum(outcome), by= position][position =="short", V1],
+  #                                       LONG_PROFS = types_profs[, sum(outcome), by= position][position =="long", V1],
+  #                                       SHORT_WINRATIO = types_profs[position == "short"  & outcome > 0, .N]/nrow(types_profs[position == "short"]),
+  #                                       LONG_WINRATIO = types_profs[position == "long"  & outcome > 0, .N]/nrow(types_profs[position == "long"]))
+  #   strategy_results[[j]] <<- cbind(strategy_results[[j]], testing_params[j, ])
+  #   
+  # } else {
+  #   profs[j]<- 0
+  #   strategy_results[[j]] <- data.table(HODL = tail(df[, close],1) - head(df[, close],1),
+  #                                       PROFS = profs[j],
+  #                                       PROFS_PER = round(profs[j] /head(df[,close], 1)*100, 2),
+  #                                       WINRATIO = 0,
+  #                                       N_TRADES = 0,
+  #                                       N_LONG = 0,
+  #                                       N_SHORT = 0,
+  #                                       SHORT_PROFS = 0,
+  #                                       LONG_PROFS = 0,
+  #                                       SHORT_WINRATIO = 0,
+  #                                       LONG_WINRATIO = 0)
+  #   strategy_results[[j]] <<- cbind(strategy_results[[j]], testing_params[j, ])
+  # }  
+}

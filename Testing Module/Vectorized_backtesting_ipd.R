@@ -16,18 +16,18 @@
 
 
 # define parameters
-n_sort <- data.frame(n_sort = seq(1, 21, 2), flag = 1)
-look_back <- data.frame(look_back = seq(200, 500, 50), flag = 1)
+n_sort <- data.frame(n_sort = seq(1), flag = 1)
+look_back <- data.frame(look_back = c(50), flag = 1)
 # rsi <- data.frame(rsi = seq(5, 20, 2), flag = 1)
 # rsi_top <- data.frame(rsi_top = seq(70, 95, 5), flag = 1)
 # rsi_bot <- data.frame(rsi_bot = seq(5, 30, 5), flag = 1)
 # ema <- data.frame(ema = seq(10, 200, 20), flag = 1)
-tp <- data.frame(tp = c(0.035)*100, flag = 1)
+tp <- data.frame(tp = c(0.005, 0.01, 0.02)*100, flag = 1)
 # tp <- data.frame(tp = c( 0.006)*100, flag = 1)
-sl <- data.frame(sl = c(0.1)*100, flag = 1)
+sl <- data.frame(sl = c(0.01)*100, flag = 1)
 # sl <- data.frame(sl = c(0.006)*100, flag = 1)
-per <- data.frame(per = c(0.03, 0.05), flag = 1)
-n_exclude <- data.frame(n_exclude = c(50,100), flag = 1)
+per <- data.frame(per = c(0), flag = 1)
+n_exclude <- data.frame(n_exclude = c(1), flag = 1)
 
 # Create set pof parameters
 testing_params <- as.data.table(left_join(n_sort, look_back) %>% left_join(sl)
@@ -232,7 +232,7 @@ set_summary_binded <- rbindlist(set_summary)
 
 # set_summary_binded[, params_string := paste(ema,tp, sl,  sep = "_")]
 set_summary_binded[, params_string := paste(n_sort,look_back, sl, tp,per,n_exclude, sep = "_")]
-View(set_summary_binded)
+
 # data_path <- "/media/chris/DATA/Documents/Bot_Trading/Historical_data"
 # saveRDS(set_summary_binded, "/media/chris/DATA/Documents/Bot_Trading/Coinmaker_v0.2/Testing Module/klines1min_eth_2021_01_2021_06_SRLINES.RDS")
 
@@ -304,7 +304,7 @@ summaries[outcome > 0, .N]/nrow(summaries)
 types <- unique(df[, .(position, trade)])
 types_profs <- merge(summaries, types, by = "trade", all.x = T)
 types_profs[, sum(outcome), by= position]
-
+sum(types_profs$outcome)
 
 # summaries
 strategy_results <- data.table(HODL = tail(df[, close],1) - head(df[, close],1),
